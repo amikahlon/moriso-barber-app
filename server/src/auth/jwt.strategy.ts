@@ -2,8 +2,9 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { passportJwtSecret } from 'jwks-rsa';
 import { PrismaService } from '../prisma/prisma.service';
-import { users } from '@prisma/client';
+import type { users } from '@prisma/client';
 
 interface SupabaseJwtPayload {
   sub: string;
@@ -16,10 +17,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     config: ConfigService,
     private readonly prisma: PrismaService,
   ) {
+    const supabaseUrl = config.getOrThrow<string>('SUPABASE_URL');
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.getOrThrow<string>('SUPABASE_JWT_SECRET'),
+      secretOrKeyProvider: passportJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
+      }),
     });
   }
 
@@ -27,9 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.prisma.users.findUnique({
       where: { id: payload.sub },
     });
-
     if (!user) throw new UnauthorizedException('משתמש לא נמצא');
-
     return user;
   }
 }

@@ -1,70 +1,31 @@
-# compiled output
-/dist
-/node_modules
-/build
+FROM node:20-alpine AS builder
 
-# Logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
+WORKDIR /app
 
-# OS
-.DS_Store
+COPY package*.json ./
 
-# Tests
-/coverage
-/.nyc_output
+RUN npm ci
 
-# IDEs and editors
-/.idea
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
+COPY . .
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+# יצור את Prisma Client לפני ה-build
+RUN npx prisma generate
 
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+RUN npm run build
 
-# temp directory
-.temp
-.tmp
+# Production image
+FROM node:20-alpine AS production
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+WORKDIR /app
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+COPY package*.json ./
+RUN npm ci --only=production
 
-/generated/prisma
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Environment
-.env
-.env.local
-.env.production
+EXPOSE 3000
 
-# Prisma
-prisma/migrations/
-
-# OS
-.DS_Store
-Thumbs.db
+CMD ["node", "dist/src/main.js"]

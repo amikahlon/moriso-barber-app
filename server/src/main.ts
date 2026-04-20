@@ -21,7 +21,7 @@ async function bootstrap(): Promise<void> {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   const config = new DocumentBuilder()
-    .setTitle('QRista Barber API')
+    .setTitle('Moriso Barber API')
     .setDescription('מערכת תורים לספר')
     .setVersion('1.0')
     .addBearerAuth()
@@ -29,12 +29,12 @@ async function bootstrap(): Promise<void> {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {
-    customSiteTitle: 'QRista API',
+    customSiteTitle: 'Moriso Barber API',
     customCss: `
       .swagger-ui .topbar { background-color: #111111; }
       .swagger-ui .topbar-wrapper img { display: none; }
       .swagger-ui .topbar-wrapper::after {
-        content: 'QRista API';
+        content: 'Moriso Barber API';
         color: white;
         font-size: 20px;
         font-weight: bold;

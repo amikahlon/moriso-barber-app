@@ -30,10 +30,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'שגיאה פנימית בשרת';
 
-    this.logger.error(
-      `${request.method} ${request.url} — ${status}`,
-      exception instanceof Error ? exception.stack : String(exception),
-    );
+    // 5xx — שגיאות שרת אמיתיות → אדום
+    if (status >= 500) {
+      this.logger.error(
+        `${request.method} ${request.url} — ${status}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    } else {
+      // 4xx — שגיאות לקוח תקינות → צהוב
+      this.logger.warn(`${request.method} ${request.url} — ${status}`);
+    }
+
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),

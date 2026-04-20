@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Param,
@@ -10,6 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { RegisterPushTokenDto } from './dto/register-push-token.dto';
 import {
   JwtAuthGuard,
   RolesGuard,
@@ -26,12 +28,14 @@ import type { users } from '@prisma/client';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /** פרופיל המשתמש המחובר */
   @Get('me')
   @ApiOperation({ summary: 'פרופיל המשתמש המחובר' })
   getMe(@CurrentUser() user: users): users {
     return user;
   }
 
+  /** עדכון פרופיל */
   @Patch('me')
   @ApiOperation({ summary: 'עדכון פרופיל' })
   updateMe(
@@ -41,6 +45,17 @@ export class UsersController {
     return this.usersService.update(user.id, dto);
   }
 
+  /** רישום push token */
+  @Post('push-token')
+  @ApiOperation({ summary: 'רישום push token למכשיר' })
+  registerPushToken(
+    @CurrentUser() user: users,
+    @Body() dto: RegisterPushTokenDto,
+  ): Promise<void> {
+    return this.usersService.registerPushToken(user.id, dto);
+  }
+
+  /** כל המשתמשים — אדמין בלבד */
   @Get()
   @UseGuards(RolesGuard)
   @Roles('admin')
@@ -49,6 +64,7 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  /** משתמש לפי ID — אדמין בלבד */
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles('admin')
@@ -57,6 +73,7 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  /** מחיקת משתמש — אדמין בלבד */
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('admin')

@@ -8,6 +8,7 @@ export class PrismaService
 {
   async onModuleInit(): Promise<void> {
     await this.$connect();
+    await this.$executeRaw`SET timezone = 'Asia/Jerusalem'`;
   }
 
   async onModuleDestroy(): Promise<void> {

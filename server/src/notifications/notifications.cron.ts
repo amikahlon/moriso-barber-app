@@ -51,16 +51,14 @@ export class NotificationsCron {
     this.logger.log(`נמצאו ${upcomingBookings.length} תורים לתזכורת`);
 
     // שלח תזכורת לכל לקוח
-    await Promise.all(
-      upcomingBookings.map((booking) =>
-        this.notifications.sendToUser(
-          booking.users.id,
-          'תזכורת תור 🕐',
-          `יש לך תור ל${booking.services.name} בעוד שעה`,
-          { bookingId: booking.id },
-        ),
-      ),
-    );
+    for (const booking of upcomingBookings) {
+      await this.notifications.sendToUser(
+        booking.users.id,
+        'תזכורת תור 🕐',
+        `יש לך תור ל${booking.services.name} בעוד שעה`,
+        { bookingId: booking.id },
+      );
+    }
   }
 
   /**
@@ -94,14 +92,12 @@ export class NotificationsCron {
 
     this.logger.log(`נמצאו ${birthdayUsers.length} ימי הולדת היום`);
 
-    await Promise.all(
-      birthdayUsers.map((user) =>
-        this.notifications.sendToUser(
-          user.id,
-          ' יום הולדת שמח!',
-          `${user.full_name}, המספרה מאחלת לך יום הולדת שמח!`,
-        ),
-      ),
-    );
+    for (const user of birthdayUsers) {
+      await this.notifications.sendToUser(
+        user.id,
+        ' יום הולדת שמח!',
+        `${user.full_name}, המספרה מאחלת לך יום הולדת שמח!`,
+      );
+    }
   }
 }

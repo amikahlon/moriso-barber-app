@@ -41,6 +41,11 @@ export class SlotsService {
 
     const businessSettings = await this.settings.get();
     const slotInterval = businessSettings.slot_interval_minutes;
+    const businessTimeZone = businessSettings.timezone ?? 'Asia/Jerusalem';
+    const isRequestedDateToday = this.isTodayInTimeZone(date, businessTimeZone);
+    const nowMinutes = isRequestedDateToday
+      ? this.getNowMinutesInTimeZone(businessTimeZone)
+      : -1;
 
     // custom שעות דורסות את ה-default
     const workingHours =
@@ -68,6 +73,10 @@ export class SlotsService {
         current + serviceDurationMinutes <= endMinutes;
         current += slotInterval
       ) {
+        if (isRequestedDateToday && current < nowMinutes) {
+          continue;
+        }
+
         const slotEnd = current + serviceDurationMinutes;
 
         // בדוק חפיפה עם חסימות
@@ -107,5 +116,33 @@ export class SlotsService {
       .padStart(2, '0');
     const m = (minutes % 60).toString().padStart(2, '0');
     return `${h}:${m}`;
+  }
+
+  private isTodayInTimeZone(date: Date, timeZone: string): boolean {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
+    return formatter.format(date) === formatter.format(new Date());
+  }
+
+  private getNowMinutesInTimeZone(timeZone: string): number {
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    });
+
+    const parts = formatter.formatToParts(new Date());
+    const hour = Number(parts.find((part) => part.type === 'hour')?.value ?? 0);
+    const minute = Number(
+      parts.find((part) => part.type === 'minute')?.value ?? 0,
+    );
+
+    return hour * 60 + minute;
   }
 }

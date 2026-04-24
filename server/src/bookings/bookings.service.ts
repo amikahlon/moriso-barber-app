@@ -45,10 +45,11 @@ export class BookingsService {
     });
   }
 
-  /** התור הפעיל של לקוח */
-  async findActiveByCustomer(customerId: string): Promise<bookings | null> {
-    return this.prisma.bookings.findFirst({
+  /** כל התורים הפעילים של לקוח */
+  async findActiveByCustomer(customerId: string): Promise<bookings[]> {
+    return this.prisma.bookings.findMany({
       where: { customer_id: customerId, status: 'active' },
+      orderBy: [{ booking_date: 'asc' }, { start_time: 'asc' }],
       include: {
         services: true,
         open_days: true,

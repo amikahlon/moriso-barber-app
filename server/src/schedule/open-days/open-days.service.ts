@@ -12,7 +12,11 @@ export class OpenDaysService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(): Promise<open_days[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     return this.prisma.open_days.findMany({
+      where: { date: { gte: today } },
       orderBy: { date: 'asc' },
       include: {
         custom_day_hours: true,

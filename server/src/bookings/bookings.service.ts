@@ -10,6 +10,8 @@ import { SlotsService } from '../schedule/slots/slots.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import type { bookings } from '@prisma/client';
 
+const MAX_ACTIVE_BOOKINGS_PER_CUSTOMER = 5;
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -56,14 +58,16 @@ export class BookingsService {
 
   /**
    * קביעת תור חדש
-   * בודק: לקוח לא קבע כבר, היום פתוח, ה-slot פנוי
+   * בודק: הלקוח לא חרג ממכסת תורים פעילים, היום פתוח, ה-slot פנוי
    */
   async create(customerId: string, dto: CreateBookingDto): Promise<bookings> {
-    // לקוח יכול תור אחד פעיל בלבד
-    const existingBooking = await this.findActiveByCustomer(customerId);
-    if (existingBooking) {
+    const activeBookingsCount = await this.prisma.bookings.count({
+      where: { customer_id: customerId, status: 'active' },
+    });
+
+    if (activeBookingsCount >= MAX_ACTIVE_BOOKINGS_PER_CUSTOMER) {
       throw new ConflictException(
-        'כבר קיים תור פעיל — בטל אותו לפני קביעת תור חדש',
+        `ניתן לקבוע עד ${MAX_ACTIVE_BOOKINGS_PER_CUSTOMER} תורים פעילים בלבד`,
       );
     }
 

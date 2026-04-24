@@ -25,6 +25,10 @@ export class SlotsService {
     date: Date,
     serviceDurationMinutes: number,
   ): Promise<TimeSlot[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) return [];
+
     const openDay = await this.prisma.open_days.findUnique({
       where: { date },
       include: {

@@ -51,9 +51,9 @@ export class BookingsController {
     return this.bookingsService.findByDate(new Date(date));
   }
 
-  /** התור הפעיל של הלקוח המחובר */
+  /** כל התורים הפעילים של הלקוח המחובר */
   @Get('my')
-  @ApiOperation({ summary: 'התור הפעיל שלי' })
+  @ApiOperation({ summary: 'כל התורים הפעילים שלי' })
   findMyBooking(@CurrentUser() user: users) {
     return this.bookingsService.findActiveByCustomer(user.id);
   }

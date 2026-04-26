@@ -1,0 +1,1 @@
+export { useSettingsQuery } from "./useSettingsQuery";

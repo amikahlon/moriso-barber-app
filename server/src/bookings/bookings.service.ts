@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { SlotsService } from '../schedule/slots/slots.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import type { bookings } from '@prisma/client';
 
@@ -18,6 +19,7 @@ export class BookingsService {
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
     private readonly slots: SlotsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /** כל התורים — לאדמין */
@@ -60,6 +62,7 @@ export class BookingsService {
   /**
    * קביעת תור חדש
    * בודק: הלקוח לא חרג ממכסת תורים פעילים, היום פתוח, ה-slot פנוי
+   * אחרי יצירה — שולח פוש לכל האדמינים
    */
   async create(customerId: string, dto: CreateBookingDto): Promise<bookings> {
     const activeBookingsCount = await this.prisma.bookings.count({
@@ -101,7 +104,8 @@ export class BookingsService {
       throw new ConflictException('השעה המבוקשת אינה פנויה');
     }
 
-    return this.prisma.bookings.create({
+    // צור תור
+    const booking = await this.prisma.bookings.create({
       data: {
         customer_id: customerId,
         service_id: dto.serviceId,
@@ -113,7 +117,20 @@ export class BookingsService {
         service_price_snapshot: service.price,
         open_day_id: openDay.id,
       },
+      include: {
+        users: { select: { full_name: true } },
+        services: { select: { name: true } },
+      },
     });
+
+    // שלח פוש לאדמינים — לא חוסם את התשובה
+    void this.notifications.sendToAdmins(
+      'תור חדש 📅',
+      `${booking.users.full_name} קבע תור ל${booking.services.name} ב-${dto.startTime} (${bookingDate.toLocaleDateString('he-IL')})`,
+      { bookingId: booking.id },
+    );
+
+    return booking;
   }
 
   /**
@@ -126,6 +143,10 @@ export class BookingsService {
   ): Promise<bookings> {
     const booking = await this.prisma.bookings.findUnique({
       where: { id: bookingId },
+      include: {
+        users: { select: { id: true, full_name: true } },
+        services: { select: { name: true } },
+      },
     });
 
     if (!booking) throw new NotFoundException('תור לא נמצא');
@@ -148,6 +169,13 @@ export class BookingsService {
           `לא ניתן לבטל פחות מ-${minNoticeMinutes} דקות לפני התור`,
         );
       }
+
+      // שלח פוש לאדמינים על ביטול
+      void this.notifications.sendToAdmins(
+        'ביטול תור ❌',
+        `${booking.users.full_name} ביטל תור ל${booking.services.name}`,
+        { bookingId: booking.id },
+      );
     }
 
     return this.prisma.bookings.update({

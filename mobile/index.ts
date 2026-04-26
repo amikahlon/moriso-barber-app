@@ -1,5 +1,3 @@
-﻿import { registerRootComponent } from 'expo';
+import "./src/i18n/rtl";
 
-import App from './App';
-
-registerRootComponent(App);
+import "expo-router/entry";

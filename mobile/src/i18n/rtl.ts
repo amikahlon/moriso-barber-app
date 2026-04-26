@@ -1,11 +1,11 @@
 import { I18nManager } from "react-native";
 
-I18nManager.allowRTL(true);
+I18nManager.allowRTL(false);
 
-if (!I18nManager.isRTL) {
-  I18nManager.forceRTL(true);
+if (I18nManager.isRTL) {
+  I18nManager.forceRTL(false);
 }
 
 if (typeof I18nManager.swapLeftAndRightInRTL === "function") {
-  I18nManager.swapLeftAndRightInRTL(true);
+  I18nManager.swapLeftAndRightInRTL(false);
 }

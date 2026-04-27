@@ -19,26 +19,26 @@ import { ScreenHeader } from "../../src/features/navigation";
 const PRIVACY_POLICY_URL = "https://amikahlon.github.io/privacy-policy";
 
 const profileText = {
-  accountDetails: "\u05e4\u05e8\u05d8\u05d9 \u05d4\u05d7\u05e9\u05d1\u05d5\u05df \u05e9\u05dc\u05da",
-  birthDate: "\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05d9\u05d3\u05d4",
-  cancel: "\u05d1\u05d9\u05d8\u05d5\u05dc",
-  deleteAccount: "\u05de\u05d7\u05d9\u05e7\u05ea \u05d4\u05d7\u05e9\u05d1\u05d5\u05df",
+  accountDetails: "פרטי החשבון שלך",
+  birthDate: "תאריך לידה",
+  cancel: "ביטול",
+  deleteAccount: "מחיקת החשבון",
   deleteAccountConfirm:
-    "\u05d4\u05e4\u05e2\u05d5\u05dc\u05d4 \u05ea\u05de\u05d7\u05e7 \u05d0\u05ea \u05d4\u05d7\u05e9\u05d1\u05d5\u05df \u05e9\u05dc\u05da \u05dc\u05e6\u05de\u05d9\u05ea\u05d5\u05ea. \u05dc\u05d4\u05de\u05e9\u05d9\u05da?",
+    "הפעולה תמחק את החשבון שלך לצמיתות. להמשיך?",
   deleteAccountError:
-    "\u05dc\u05d0 \u05e0\u05d9\u05ea\u05df \u05dc\u05de\u05d7\u05d5\u05e7 \u05d0\u05ea \u05d4\u05d7\u05e9\u05d1\u05d5\u05df \u05db\u05e8\u05d2\u05e2. \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1.",
-  deleteAccountTitle: "\u05dc\u05de\u05d7\u05d5\u05e7 \u05d0\u05ea \u05d4\u05d7\u05e9\u05d1\u05d5\u05df?",
-  deletingAccount: "\u05de\u05d5\u05d7\u05e7...",
-  email: "\u05d0\u05d9\u05de\u05d9\u05d9\u05dc",
-  errorTitle: "\u05e9\u05d2\u05d9\u05d0\u05d4",
-  fullName: "\u05e9\u05dd \u05de\u05dc\u05d0",
-  personalDetails: "\u05e4\u05e8\u05d8\u05d9\u05dd \u05d0\u05d9\u05e9\u05d9\u05d9\u05dd",
-  phone: "\u05d8\u05dc\u05e4\u05d5\u05df",
-  privacy: "\u05e4\u05e8\u05d8\u05d9\u05d5\u05ea",
-  privacyPolicy: "\u05de\u05d3\u05d9\u05e0\u05d9\u05d5\u05ea \u05e4\u05e8\u05d8\u05d9\u05d5\u05ea",
-  settings: "\u05d4\u05d2\u05d3\u05e8\u05d5\u05ea",
-  unavailable: "\u05dc\u05d0 \u05d6\u05de\u05d9\u05df",
-  user: "\u05de\u05e9\u05ea\u05de\u05e9",
+    "לא ניתן למחוק את החשבון כרגע. נסה שוב.",
+  deleteAccountTitle: "למחוק את החשבון?",
+  deletingAccount: "מוחק...",
+  email: "אימייל",
+  errorTitle: "שגיאה",
+  fullName: "שם מלא",
+  personalDetails: "פרטים אישיים",
+  phone: "טלפון",
+  privacy: "פרטיות",
+  privacyPolicy: "מדיניות פרטיות",
+  settings: "הגדרות",
+  unavailable: "לא זמין",
+  user: "משתמש",
 } as const;
 
 const formatBirthDate = (value?: string | null) => {

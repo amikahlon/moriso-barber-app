@@ -10,6 +10,7 @@ type AuthFieldConfig<FieldName extends string> = {
   secureTextEntry?: boolean;
   textContentType?: TextInputProps["textContentType"];
   autoComplete?: TextInputProps["autoComplete"];
+  required?: boolean;
 };
 
 export const loginFields: AuthFieldConfig<"email" | "password">[] = [
@@ -42,6 +43,7 @@ export const registerFields: AuthFieldConfig<
     placeholder: "איך קוראים לך?",
     textContentType: "name",
     autoComplete: "name",
+    required: true,
   },
   {
     name: "phone",
@@ -50,12 +52,14 @@ export const registerFields: AuthFieldConfig<
     keyboardType: "phone-pad",
     textContentType: "telephoneNumber",
     autoComplete: "tel",
+    required: false,
   },
   {
     name: "birthDate",
     label: "תאריך לידה",
     placeholder: "1995-06-15",
     keyboardType: "numbers-and-punctuation",
+    required: false,
   },
   {
     name: "email",
@@ -66,6 +70,7 @@ export const registerFields: AuthFieldConfig<
     autoCorrect: false,
     textContentType: "emailAddress",
     autoComplete: "email",
+    required: true,
   },
   {
     name: "password",
@@ -74,5 +79,6 @@ export const registerFields: AuthFieldConfig<
     secureTextEntry: true,
     textContentType: "newPassword",
     autoComplete: "new-password",
+    required: true,
   },
 ];

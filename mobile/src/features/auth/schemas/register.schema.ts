@@ -12,21 +12,34 @@ const isValidBirthDate = (value: string) => {
   );
 };
 
+const optionalPhoneSchema = z.string().refine((value) => {
+  if (!value.trim()) {
+    return true;
+  }
+
+  const phone = value.replace(/\D/g, "");
+  return phone.length >= 9;
+}, "מספר טלפון לא תקין");
+
+const optionalBirthDateSchema = z.string().refine((value) => {
+  const birthDate = value.trim();
+
+  return (
+    birthDate.length === 0 ||
+    (/^\d{4}-\d{2}-\d{2}$/.test(birthDate) && isValidBirthDate(birthDate))
+  );
+}, "תאריך לידה לא תקין");
+
 export const registerSchema = z.object({
   fullName: z.string().min(2, "יש להזין שם מלא"),
 
-  phone: z
-    .string()
-    .refine((value) => value.replace(/\D/g, "").length >= 9, "מספר טלפון לא תקין"),
+  phone: optionalPhoneSchema,
 
   email: z.string().email("אימייל לא תקין"),
 
   password: z.string().min(8, "לפחות 8 תווים"),
 
-  birthDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "תאריך לידה לא תקין")
-    .refine(isValidBirthDate, "תאריך לידה לא תקין"),
+  birthDate: optionalBirthDateSchema,
 });
 
 export type RegisterFormData = z.infer<typeof registerSchema>;

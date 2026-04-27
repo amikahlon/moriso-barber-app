@@ -21,13 +21,19 @@ const getBirthDateParts = (value?: string) => {
 };
 
 const formatBirthDateParts = (parts: Record<BirthDatePart, string>) =>
-  `${parts.year}-${parts.month}-${parts.day}`;
+  parts.year || parts.month || parts.day
+    ? `${parts.year}-${parts.month}-${parts.day}`
+    : "";
+
+const getFieldLabel = (label: string, required?: boolean) =>
+  required ? `${label} *` : label;
 
 type BirthDateInputProps = {
   value: string;
   onChange: (value: string) => void;
   onBlur: () => void;
   error?: string;
+  required?: boolean;
 };
 
 const BirthDateInput = ({
@@ -35,6 +41,7 @@ const BirthDateInput = ({
   onChange,
   onBlur,
   error,
+  required,
 }: BirthDateInputProps) => {
   const parts = getBirthDateParts(value);
 
@@ -63,7 +70,7 @@ const BirthDateInput = ({
 
   return (
     <View style={styles.birthDateContainer}>
-      <Text style={styles.label}>תאריך לידה</Text>
+      <Text style={styles.label}>{getFieldLabel("תאריך לידה", required)}</Text>
 
       <View style={styles.birthDateRow}>
         <View style={styles.birthDateField}>
@@ -140,24 +147,25 @@ export default function RegisterScreen() {
                   onChange={field.onChange}
                   onBlur={field.onBlur}
                   error={errors.birthDate?.message}
+                  required={input.required}
                 />
               ) : (
                 <View>
                   <GoldInput
-                  label={input.label}
-                  placeholder={input.placeholder}
-                  value={field.value}
-                  onChangeText={field.onChange}
-                  onBlur={field.onBlur}
-                  keyboardType={input.keyboardType}
-                  autoCapitalize={input.autoCapitalize}
-                  autoCorrect={input.autoCorrect}
-                  secureTextEntry={input.secureTextEntry}
-                  textContentType={input.textContentType}
-                  autoComplete={input.autoComplete}
-                  returnKeyType={input.name === "password" ? "done" : "next"}
-                  error={errors[input.name]?.message}
-                />
+                    label={getFieldLabel(input.label, input.required)}
+                    placeholder={input.placeholder}
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    onBlur={field.onBlur}
+                    keyboardType={input.keyboardType}
+                    autoCapitalize={input.autoCapitalize}
+                    autoCorrect={input.autoCorrect}
+                    secureTextEntry={input.secureTextEntry}
+                    textContentType={input.textContentType}
+                    autoComplete={input.autoComplete}
+                    returnKeyType={input.name === "password" ? "done" : "next"}
+                    error={errors[input.name]?.message}
+                  />
 
                 {false && (
                   <Text style={styles.fieldHint}>לדוגמה: 1995-06-15</Text>

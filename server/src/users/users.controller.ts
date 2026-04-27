@@ -7,6 +7,8 @@ import {
   Param,
   Body,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -73,10 +75,19 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  /** מחיקת החשבון של המשתמש המחובר */
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'מחיקת החשבון של המשתמש המחובר' })
+  removeMe(@CurrentUser() user: users): Promise<void> {
+    return this.usersService.remove(user.id);
+  }
+
   /** מחיקת משתמש — אדמין בלבד */
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'מחיקת משתמש — אדמין בלבד' })
   remove(@Param('id', ParseUuidPipe) id: string): Promise<void> {
     return this.usersService.remove(id);

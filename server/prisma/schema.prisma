@@ -34,23 +34,23 @@ model blocked_time_ranges {
 }
 
 model bookings {
-  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id            String    @db.Uuid
-  service_id             String    @db.Uuid
-  booking_date           DateTime  @db.Date
-  start_time             DateTime  @db.Time(6)
-  end_time               DateTime  @db.Time(6)
-  status                 String    @default("active")
+  id                     String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id            String     @db.Uuid
+  service_id             String     @db.Uuid
+  booking_date           DateTime   @db.Date
+  start_time             DateTime   @db.Time(6)
+  end_time               DateTime   @db.Time(6)
+  status                 String     @default("active")
   notes                  String?
-  service_price_snapshot Decimal   @db.Decimal(10, 2)
-  cancelled_at           DateTime? @db.Timestamptz(6)
-  created_at             DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime? @default(now()) @db.Timestamptz(6)
-  open_day_id            String?   @db.Uuid
+  service_price_snapshot Decimal    @db.Decimal(10, 2)
+  cancelled_at           DateTime?  @db.Timestamptz(6)
+  created_at             DateTime?  @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?  @default(now()) @db.Timestamptz(6)
+  open_day_id            String?    @db.Uuid
   cancelled_by           String?
-  users                  users     @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                  users      @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   open_days              open_days? @relation(fields: [open_day_id], references: [id], onUpdate: NoAction)
-  services               services  @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  services               services   @relation(fields: [service_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([open_day_id])
   @@index([service_id])
@@ -143,7 +143,7 @@ model services {
 model users {
   id          String        @id @db.Uuid
   full_name   String
-  phone       String
+  phone       String?
   email       String        @unique
   role        String
   notes       String?

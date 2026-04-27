@@ -1,8 +1,19 @@
-﻿import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import { ScreenLoader } from "../../src/components/common";
 import { colors, typography, spacing } from "../../src/constants";
-import { useCurrentUserQuery } from "../../src/features/auth/hooks";
+import {
+  useCurrentUserQuery,
+  useDeleteAccount,
+} from "../../src/features/auth/hooks";
 import { ScreenHeader } from "../../src/features/navigation";
 
 const PRIVACY_POLICY_URL = "https://amikahlon.github.io/privacy-policy";
@@ -10,7 +21,16 @@ const PRIVACY_POLICY_URL = "https://amikahlon.github.io/privacy-policy";
 const profileText = {
   accountDetails: "\u05e4\u05e8\u05d8\u05d9 \u05d4\u05d7\u05e9\u05d1\u05d5\u05df \u05e9\u05dc\u05da",
   birthDate: "\u05ea\u05d0\u05e8\u05d9\u05da \u05dc\u05d9\u05d3\u05d4",
+  cancel: "\u05d1\u05d9\u05d8\u05d5\u05dc",
+  deleteAccount: "\u05de\u05d7\u05d9\u05e7\u05ea \u05d4\u05d7\u05e9\u05d1\u05d5\u05df",
+  deleteAccountConfirm:
+    "\u05d4\u05e4\u05e2\u05d5\u05dc\u05d4 \u05ea\u05de\u05d7\u05e7 \u05d0\u05ea \u05d4\u05d7\u05e9\u05d1\u05d5\u05df \u05e9\u05dc\u05da \u05dc\u05e6\u05de\u05d9\u05ea\u05d5\u05ea. \u05dc\u05d4\u05de\u05e9\u05d9\u05da?",
+  deleteAccountError:
+    "\u05dc\u05d0 \u05e0\u05d9\u05ea\u05df \u05dc\u05de\u05d7\u05d5\u05e7 \u05d0\u05ea \u05d4\u05d7\u05e9\u05d1\u05d5\u05df \u05db\u05e8\u05d2\u05e2. \u05e0\u05e1\u05d4 \u05e9\u05d5\u05d1.",
+  deleteAccountTitle: "\u05dc\u05de\u05d7\u05d5\u05e7 \u05d0\u05ea \u05d4\u05d7\u05e9\u05d1\u05d5\u05df?",
+  deletingAccount: "\u05de\u05d5\u05d7\u05e7...",
   email: "\u05d0\u05d9\u05de\u05d9\u05d9\u05dc",
+  errorTitle: "\u05e9\u05d2\u05d9\u05d0\u05d4",
   fullName: "\u05e9\u05dd \u05de\u05dc\u05d0",
   personalDetails: "\u05e4\u05e8\u05d8\u05d9\u05dd \u05d0\u05d9\u05e9\u05d9\u05d9\u05dd",
   phone: "\u05d8\u05dc\u05e4\u05d5\u05df",
@@ -49,11 +69,39 @@ function InfoRow({ label, value }: InfoRowProps) {
 
 export default function ProfileScreen() {
   const currentUserQuery = useCurrentUserQuery();
+  const deleteAccount = useDeleteAccount();
   const user = currentUserQuery.data;
   const birthDate = formatBirthDate(user?.birthDate ?? user?.birth_date);
 
   const handleOpenPrivacyPolicy = () => {
     void Linking.openURL(PRIVACY_POLICY_URL);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      profileText.deleteAccountTitle,
+      profileText.deleteAccountConfirm,
+      [
+        {
+          text: profileText.cancel,
+          style: "cancel",
+        },
+        {
+          text: profileText.deleteAccount,
+          style: "destructive",
+          onPress: () => {
+            deleteAccount.mutate(undefined, {
+              onError: () => {
+                Alert.alert(
+                  profileText.errorTitle,
+                  profileText.deleteAccountError,
+                );
+              },
+            });
+          },
+        },
+      ],
+    );
   };
 
   if (currentUserQuery.isLoading) {
@@ -97,6 +145,22 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.footerLinks}>
+          <TouchableOpacity
+            style={[
+              styles.deleteAccountButton,
+              deleteAccount.isPending && styles.deleteAccountButtonDisabled,
+            ]}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.85}
+            disabled={deleteAccount.isPending}
+          >
+            <Text style={styles.deleteAccountText}>
+              {deleteAccount.isPending
+                ? profileText.deletingAccount
+                : profileText.deleteAccount}
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.privacyLink}
             onPress={handleOpenPrivacyPolicy}
@@ -213,6 +277,28 @@ const styles = StyleSheet.create({
   footerLinks: {
     alignItems: "center",
     marginTop: spacing.sm,
+  },
+  deleteAccountButton: {
+    width: "100%",
+    minHeight: 50,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: `${colors.error}55`,
+    backgroundColor: `${colors.error}10`,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  deleteAccountButtonDisabled: {
+    opacity: 0.6,
+  },
+  deleteAccountText: {
+    color: colors.error,
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.bold,
+    textAlign: "center",
   },
   privacyLink: {
     paddingHorizontal: spacing.md,

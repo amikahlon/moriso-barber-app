@@ -38,4 +38,8 @@ export const usersApi = {
     const { data } = await apiClient.get<RawUser[]>("/users");
     return data.map(mapUser);
   },
+
+  removeMe: async (): Promise<void> => {
+    await apiClient.delete("/users/me");
+  },
 };

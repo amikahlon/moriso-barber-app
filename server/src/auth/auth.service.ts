@@ -15,7 +15,7 @@ export interface AuthResponse {
     id: string;
     email: string;
     full_name: string;
-    phone: string;
+    phone: string | null;
     role: string;
     birth_date: Date | null;
   };
@@ -58,7 +58,7 @@ export class AuthService {
         id: data.user.id,
         email: dto.email,
         full_name: dto.fullName,
-        phone: dto.phone,
+        phone: dto.phone ?? null,
         role: 'customer',
         birth_date: dto.birthDate ? new Date(dto.birthDate) : null,
       },

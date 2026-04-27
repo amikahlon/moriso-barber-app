@@ -9,7 +9,7 @@ export interface User {
 }
 
 export interface AuthResponse {
-  user: User;
+  user?: User;
   accessToken: string;
   refreshToken: string;
 }
@@ -22,7 +22,7 @@ export interface LoginDto {
 export interface RegisterDto {
   fullName: string;
   email: string;
-  phone: string;
+  phone?: string;
   password: string;
-  birthDate: string;
+  birthDate?: string;
 }

@@ -48,15 +48,22 @@ export class UsersService {
     });
   }
 
-  /** מחיקת משתמש — מ-Supabase Auth וגם מה-DB */
+  /** מחיקת משתמש — כולל כל הנתונים הקשורים אליו */
   async remove(id: string): Promise<void> {
     await this.findOne(id);
 
+    // Delete all dependent records atomically before removing the user.
+    // bookings and push_tokens are defined with onDelete: NoAction so they
+    // must be deleted explicitly; a failed step rolls back the entire operation.
+    await this.prisma.$transaction([
+      this.prisma.push_tokens.deleteMany({ where: { user_id: id } }),
+      this.prisma.bookings.deleteMany({ where: { customer_id: id } }),
+      this.prisma.users.delete({ where: { id } }),
+    ]);
+
     const { error } = await this.supabase.auth.admin.deleteUser(id);
     if (error)
-      throw new Error(`שגיאה במחיקת משתמש מ-Supabase: ${error.message}`);
-
-    // CASCADE מטפל במחיקה מה-DB אוטומטית
+      throw new Error(`שגיאה במחיקת משתמש מ-Supabase Auth: ${error.message}`);
   }
 
   /**

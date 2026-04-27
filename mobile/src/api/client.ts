@@ -3,6 +3,13 @@
 import { triggerUnauthorizedHandler } from "../features/auth/lib/unauthorized-handler";
 import { supabase } from "../lib/supabase";
 
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    skipAuth?: boolean;
+    skipUnauthorizedHandler?: boolean;
+  }
+}
+
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const apiClient = axios.create({
@@ -13,6 +20,10 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
+  if (config.skipAuth) {
+    return config;
+  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession();

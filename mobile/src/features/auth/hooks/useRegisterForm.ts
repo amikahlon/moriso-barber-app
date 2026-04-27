@@ -7,7 +7,11 @@ import { router } from "expo-router";
 import { authApi } from "../../../api";
 import { supabase } from "../../../lib/supabase";
 import { authQueryKeys } from "../constants/queryKeys";
-import { registerSchema, type RegisterFormData } from "../schemas/register.schema";
+import {
+  registerSchema,
+  type RegisterFormData,
+} from "../schemas/register.schema";
+import { getAuthErrorMessage } from "../utils/getAuthErrorMessage";
 import { getHomeRouteForRole } from "../utils/getHomeRouteForRole";
 
 export const useRegisterForm = () => {
@@ -48,16 +52,8 @@ export const useRegisterForm = () => {
 
       queryClient.setQueryData(authQueryKeys.currentUser, response.user);
       router.replace(getHomeRouteForRole(response.user.role));
-    } catch (error: any) {
-      const serverMessage = error?.response?.data?.message;
-      const message =
-        (Array.isArray(serverMessage)
-          ? serverMessage.join("\n")
-          : serverMessage) ??
-        error?.message ??
-        "לא ניתן ליצור חשבון כרגע. נסה שוב.";
-
-      Alert.alert("שגיאה", message);
+    } catch (error) {
+      Alert.alert("שגיאה", getAuthErrorMessage(error, "register"));
     }
   };
 

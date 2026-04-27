@@ -8,6 +8,7 @@ import { authApi } from "../../../api";
 import { supabase } from "../../../lib/supabase";
 import { authQueryKeys } from "../constants/queryKeys";
 import { loginSchema, type LoginFormData } from "../schemas/login.schema";
+import { getAuthErrorMessage } from "../utils/getAuthErrorMessage";
 import { getHomeRouteForRole } from "../utils/getHomeRouteForRole";
 
 export const useLoginForm = () => {
@@ -40,13 +41,8 @@ export const useLoginForm = () => {
 
       queryClient.setQueryData(authQueryKeys.currentUser, response.user);
       router.replace(getHomeRouteForRole(response.user.role));
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ??
-        error?.message ??
-        "לא ניתן להתחבר כרגע. נסה שוב.";
-
-      Alert.alert("שגיאה", message);
+    } catch (error) {
+      Alert.alert("שגיאה", getAuthErrorMessage(error, "login"));
     }
   };
 

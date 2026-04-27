@@ -25,7 +25,7 @@ export const registerSchema = z.object({
 
   birthDate: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "יש להזין תאריך לידה בפורמט YYYY-MM-DD")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "תאריך לידה לא תקין")
     .refine(isValidBirthDate, "תאריך לידה לא תקין"),
 });
 

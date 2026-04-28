@@ -21,8 +21,6 @@ import { UpdateServiceDto } from './dto/update-service.dto';
 import { JwtAuthGuard, RolesGuard, Roles, ParseUuidPipe } from '../common';
 
 @ApiTags('services')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('services')
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
@@ -41,16 +39,18 @@ export class ServicesController {
   }
 
   @Post()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'יצירת שירות חדש — אדמין בלבד' })
   create(@Body() dto: CreateServiceDto) {
     return this.servicesService.create(dto);
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'עדכון שירות — אדמין בלבד' })
   update(
     @Param('id', ParseUuidPipe) id: string,
@@ -60,8 +60,9 @@ export class ServicesController {
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'מחיקת שירות — אדמין בלבד' })
   remove(@Param('id', ParseUuidPipe) id: string) {
     return this.servicesService.remove(id);

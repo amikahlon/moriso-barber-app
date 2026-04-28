@@ -5,8 +5,6 @@ import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { JwtAuthGuard, RolesGuard, Roles } from '../common';
 
 @ApiTags('settings')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('settings')
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
@@ -18,8 +16,9 @@ export class SettingsController {
   }
 
   @Patch()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'עדכון הגדרות העסק — אדמין בלבד' })
   upsert(@Body() dto: UpdateSettingsDto) {
     return this.settingsService.upsert(dto);

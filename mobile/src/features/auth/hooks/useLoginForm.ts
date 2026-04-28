@@ -1,4 +1,4 @@
-import { Alert } from "react-native";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { getAuthErrorMessage } from "../utils/getAuthErrorMessage";
 
 export const useLoginForm = () => {
   const queryClient = useQueryClient();
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -20,8 +21,18 @@ export const useLoginForm = () => {
     mode: "onChange",
   });
 
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      setAuthError(null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const onSubmit = async (data: LoginFormData) => {
     try {
+      setAuthError(null);
+
       const response = await authApi.login({
         email: data.email.trim(),
         password: data.password,
@@ -29,12 +40,13 @@ export const useLoginForm = () => {
 
       await completeAuthSession(response, queryClient);
     } catch (error) {
-      Alert.alert("שגיאה", getAuthErrorMessage(error, "login"));
+      setAuthError(getAuthErrorMessage(error, "login"));
     }
   };
 
   return {
     ...form,
+    authError,
     onSubmit,
   };
 };

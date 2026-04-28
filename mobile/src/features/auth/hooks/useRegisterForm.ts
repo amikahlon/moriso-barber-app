@@ -1,4 +1,4 @@
-import { Alert } from "react-native";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,6 +13,7 @@ import { getAuthErrorMessage } from "../utils/getAuthErrorMessage";
 
 export const useRegisterForm = () => {
   const queryClient = useQueryClient();
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -26,8 +27,18 @@ export const useRegisterForm = () => {
     mode: "onChange",
   });
 
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      setAuthError(null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const onSubmit = async (data: RegisterFormData) => {
     try {
+      setAuthError(null);
+
       const phone = data.phone.replace(/\D/g, "");
       const birthDate = data.birthDate.trim();
 
@@ -41,12 +52,13 @@ export const useRegisterForm = () => {
 
       await completeAuthSession(response, queryClient);
     } catch (error) {
-      Alert.alert("שגיאה", getAuthErrorMessage(error, "register"));
+      setAuthError(getAuthErrorMessage(error, "register"));
     }
   };
 
   return {
     ...form,
+    authError,
     onSubmit,
   };
 };

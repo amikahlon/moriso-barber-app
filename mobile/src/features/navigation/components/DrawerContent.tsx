@@ -32,13 +32,16 @@ export function DrawerContent({
   sectionLabel = "תפריט",
 }: DrawerContentProps) {
   const drawer = useDrawer();
-  const { signOut } = useAuth();
+  const { isAuthenticated, signOut } = useAuth();
   const { data: user } = useCurrentUserQuery();
   const { data: settings } = useSettingsQuery();
   const pathname = usePathname();
 
   const closeDrawer = onClose ?? drawer.close;
   const isAdmin = user?.role === "admin";
+  const visibleItems = isAuthenticated
+    ? items
+    : items.filter((item) => item.key === "home");
 
   const isActive = (route: string) =>
     normalizeDrawerRoute(pathname) === normalizeDrawerRoute(route);
@@ -64,6 +67,11 @@ export function DrawerContent({
     await signOut();
   };
 
+  const handleAuthPress = () => {
+    closeDrawer();
+    router.replace("/(auth)/login");
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -82,7 +90,7 @@ export function DrawerContent({
           </View>
           <View style={styles.userDetails}>
             <Text numberOfLines={1} style={styles.userName}>
-              {user?.full_name ?? "..."}
+              {isAuthenticated ? user?.full_name ?? "..." : "שלום אורח"}
             </Text>
             {isAdmin && (
               <View style={styles.roleBadge}>
@@ -102,7 +110,7 @@ export function DrawerContent({
       >
         <Text style={styles.sectionLabel}>{sectionLabel}</Text>
 
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const active = item.route !== "navigate" && isActive(item.route);
 
           return (
@@ -129,15 +137,27 @@ export function DrawerContent({
           <View style={styles.dividerLine} />
         </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.signOutButton,
-            pressed && styles.itemPressed,
-          ]}
-          onPress={handleSignOut}
-        >
-          <Text style={styles.signOutLabel}>התנתקות</Text>
-        </Pressable>
+        {isAuthenticated ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.signOutButton,
+              pressed && styles.itemPressed,
+            ]}
+            onPress={handleSignOut}
+          >
+            <Text style={styles.signOutLabel}>התנתקות</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [
+              styles.authButton,
+              pressed && styles.itemPressed,
+            ]}
+            onPress={handleAuthPress}
+          >
+            <Text style={styles.authButtonText}>התחברות / הרשמה</Text>
+          </Pressable>
+        )}
       </ScrollView>
 
     </View>
@@ -316,5 +336,22 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.bold,
+  },
+  authButton: {
+    minHeight: 50,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  authButtonText: {
+    color: colors.gold,
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.extraBold,
+    textAlign: "center",
   },
 });

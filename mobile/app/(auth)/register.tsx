@@ -125,7 +125,8 @@ const BirthDateInput = ({
 };
 
 export default function RegisterScreen() {
-  const { control, handleSubmit, formState, onSubmit } = useRegisterForm();
+  const { authError, control, handleSubmit, formState, onSubmit } =
+    useRegisterForm();
   const { errors, isSubmitting } = formState;
 
   return (
@@ -176,6 +177,16 @@ export default function RegisterScreen() {
         ))}
       </View>
 
+      {!!authError && (
+        <View style={styles.errorBanner}>
+          <View style={styles.errorAccent} />
+          <View style={styles.errorTextWrap}>
+            <Text style={styles.errorTitle}>לא הצלחנו ליצור חשבון</Text>
+            <Text style={styles.errorMessage}>{authError}</Text>
+          </View>
+        </View>
+      )}
+
       <GoldButton
         title="צור חשבון"
         onPress={handleSubmit(onSubmit)}
@@ -186,7 +197,7 @@ export default function RegisterScreen() {
       <AuthSwitchFooter
         question="כבר יש לך חשבון?"
         buttonTitle="להתחברות"
-        onPress={() => router.push("/(auth)/login")}
+        onPress={() => router.replace("/(auth)/login")}
       />
     </AuthFormLayout>
   );
@@ -195,6 +206,42 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   formSection: {
     marginBottom: spacing.xs,
+  },
+  errorBanner: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: `${colors.error}2E`,
+    backgroundColor: `${colors.error}0D`,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  errorAccent: {
+    width: 4,
+    alignSelf: "stretch",
+    borderRadius: 999,
+    backgroundColor: colors.error,
+  },
+  errorTextWrap: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
+  errorTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.extraBold,
+    textAlign: "right",
+    marginBottom: 2,
+  },
+  errorMessage: {
+    color: colors.error,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    lineHeight: 20,
+    textAlign: "right",
   },
   label: {
     fontSize: typography.sizes.sm,

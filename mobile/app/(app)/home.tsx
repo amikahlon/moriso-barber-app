@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import {
   Alert,
+  ActivityIndicator,
   View,
   Text,
   StyleSheet,
@@ -17,7 +18,10 @@ import { ScreenLoader } from "../../src/components/common";
 import { colors, typography, spacing } from "../../src/constants";
 import { useCurrentUserQuery } from "../../src/features/auth/hooks";
 import { CancelBookingDialog } from "../../src/features/booking/components";
-import { useCancelBooking } from "../../src/features/booking/hooks";
+import {
+  useBookingServices,
+  useCancelBooking,
+} from "../../src/features/booking/hooks";
 import { useHome, useMyBooking } from "../../src/features/home/hooks";
 import {
   formatBookingDate,
@@ -25,18 +29,21 @@ import {
 } from "../../src/features/home/utils/bookings";
 import { DrawerToggle } from "../../src/features/navigation";
 import { useSettingsQuery } from "../../src/features/settings/hooks";
+import { useAuth } from "../../src/hooks";
 
 export default function HomeScreen() {
+  const { isAuthenticated } = useAuth();
   const currentUserQuery = useCurrentUserQuery();
   const { alerts, isLoading } = useHome();
   const { bookings } = useMyBooking();
   const cancelBooking = useCancelBooking();
+  const servicesQuery = useBookingServices();
   const { data: settings } = useSettingsQuery();
   const [activeAlertIndex, setActiveAlertIndex] = useState(0);
   const [bookingToCancelId, setBookingToCancelId] = useState<string | null>(
     null,
   );
-  const sortedBookings = sortBookingsByStart(bookings);
+  const sortedBookings = isAuthenticated ? sortBookingsByStart(bookings) : [];
   const activeAlert =
     alerts.length > 0 ? alerts[activeAlertIndex % alerts.length] : null;
   const googleMapsUrl = settings?.googleMapsUrl;
@@ -58,6 +65,15 @@ export default function HomeScreen() {
     if (instagramUrl) {
       void Linking.openURL(instagramUrl);
     }
+  };
+
+  const handleBookAppointment = () => {
+    if (!isAuthenticated) {
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    router.push("/(app)/booking");
   };
 
   const handleCancelBooking = () => {
@@ -91,11 +107,11 @@ export default function HomeScreen() {
     return () => clearInterval(intervalId);
   }, [alerts.length]);
 
-  if (currentUserQuery.isLoading || isLoading) {
+  if ((isAuthenticated && currentUserQuery.isLoading) || isLoading) {
     return <ScreenLoader />;
   }
 
-  const user = currentUserQuery.data;
+  const user = isAuthenticated ? currentUserQuery.data : null;
 
   return (
     <ScrollView
@@ -134,14 +150,29 @@ export default function HomeScreen() {
               <Text style={styles.roleBadgeText}>מנהל</Text>
             </View>
           )}
-
-          <Text style={styles.greeting}>שלום, {user?.full_name ?? "..."}</Text>
-
-          <Text style={styles.subGreeting}>
-            {user?.role === "admin"
-              ? "ברוך הבא לממשק הניהול"
-              : "במה נוכל לעזור היום?"}
+          <Text style={styles.greeting}>
+            {isAuthenticated
+              ? `שלום, ${user?.full_name ?? "..."}`
+              : "שלום אורח"}
           </Text>
+
+          {isAuthenticated && (
+            <Text style={styles.subGreeting}>
+              {user?.role === "admin"
+                ? "ברוך הבא לממשק הניהול"
+                : "במה נוכל לעזור היום?"}
+            </Text>
+          )}
+
+          {!isAuthenticated && (
+            <TouchableOpacity
+              style={styles.heroAuthButton}
+              onPress={() => router.replace("/(auth)/login")}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.heroAuthText}>התחברות / הרשמה</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.bottomSweep} />
@@ -153,7 +184,14 @@ export default function HomeScreen() {
           <Text style={styles.noticeBoardTitle}>הודעות מערכת</Text>
         </View>
 
-        <View style={styles.noticeBoard}>
+        <LinearGradient
+          colors={["#FFFDF8", "#FFF6E1", "#FFEFC2"]}
+          locations={[0, 0.62, 1]}
+          start={{ x: 0.08, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.noticeBoard}
+        >
+          <View style={styles.noticeSoftWash} />
           <Image
             source={require("../../assets/moriso-c.png")}
             style={styles.noticeBoardCharacter}
@@ -218,11 +256,11 @@ export default function HomeScreen() {
               <Text style={styles.noAlertsText}>אין הודעות חדשות</Text>
             </View>
           )}
-        </View>
+        </LinearGradient>
 
         <TouchableOpacity
           style={styles.noticeBookingButton}
-          onPress={() => router.push("/(app)/booking")}
+          onPress={handleBookAppointment}
           activeOpacity={0.85}
         >
           <LinearGradient
@@ -231,75 +269,128 @@ export default function HomeScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.noticeBookingGradient}
           >
-            <Text style={styles.noticeBookingText}>קבעו תור</Text>
+            <View style={styles.noticeBookingContent}>
+              <Text style={styles.noticeBookingText}>קבעו תור</Text>
+            </View>
           </LinearGradient>
+          <View style={styles.noticeBookingFrame} pointerEvents="none" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionAccent} />
-          <Text style={styles.sectionTitle}>התורים שלי</Text>
-          {sortedBookings.length > 0 && (
-            <View style={styles.bookingCountBadge}>
-              <Text style={styles.bookingCountText}>
-                {sortedBookings.length}
+          <Text style={styles.sectionTitle}>השירותים שלנו</Text>
+        </View>
+
+        {servicesQuery.isLoading ? (
+          <View style={styles.servicesLoadingCard}>
+            <ActivityIndicator color={colors.gold} />
+          </View>
+        ) : servicesQuery.data?.length ? (
+          <View style={styles.servicesList}>
+            {servicesQuery.data.map((service, index) => (
+              <LinearGradient
+                key={service.id}
+                colors={
+                  index % 2 === 0
+                    ? ["#FFFEFA", "#FFF8EA"]
+                    : ["#FFFFFF", "#F8F3EA"]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.homeServiceCard}
+              >
+                <View style={styles.serviceAccentLine} />
+                <Text style={styles.servicePriceTag}>₪{service.price}</Text>
+                <View style={styles.serviceContent}>
+                  <View style={styles.serviceTitleRow}>
+                    <Text style={styles.serviceName}>{service.name}</Text>
+                  </View>
+
+                  <Text style={styles.serviceDescription} numberOfLines={2}>
+                    {service.description?.trim() ||
+                      "טיפול מוקפד, נקי ומותאם בדיוק ללוק שלך."}
+                  </Text>
+                </View>
+              </LinearGradient>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.servicesEmptyCard}>
+            <Text style={styles.servicesEmptyText}>אין שירותים להצגה כרגע</Text>
+          </View>
+        )}
+      </View>
+
+      {isAuthenticated && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionAccent} />
+            <Text style={styles.sectionTitle}>התורים שלי</Text>
+            {sortedBookings.length > 0 && (
+              <View style={styles.bookingCountBadge}>
+                <Text style={styles.bookingCountText}>
+                  {sortedBookings.length}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {sortedBookings.length > 0 ? (
+            <View style={styles.bookingsList}>
+              {sortedBookings.map((booking) => (
+                <View key={booking.id} style={styles.bookingCard}>
+                  <View style={styles.bookingAccent} />
+                  <View style={styles.bookingTop}>
+                    <View style={styles.bookingInfo}>
+                      <Text style={styles.bookingService}>
+                        {booking.service?.name ?? "שירות לא זמין"}
+                      </Text>
+
+                      <Text style={styles.bookingDate}>
+                        {formatBookingDate(booking.bookingDate)}
+                      </Text>
+                    </View>
+
+                    <View style={styles.bookingTimeBadge}>
+                      <Text style={styles.bookingTimeText}>
+                        {booking.startTime?.slice(0, 5) ?? "--:--"}
+                      </Text>
+                      <Text style={styles.bookingTimeLabel}>שעה</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.bookingDivider} />
+
+                  <View style={styles.bookingBottom}>
+                    <TouchableOpacity
+                      style={[
+                        styles.cancelButton,
+                        cancelBooking.isPending && styles.cancelButtonDisabled,
+                      ]}
+                      onPress={() => setBookingToCancelId(booking.id)}
+                      disabled={cancelBooking.isPending}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.cancelButtonText}>
+                        {cancelBooking.isPending ? "מבטל..." : "ביטול תור"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noBookingCard}>
+              <Text style={styles.noBookingTitle}>אין תורים</Text>
+              <Text style={styles.noBookingSubtitle}>
+                אין תורים קרובים כרגע
               </Text>
             </View>
           )}
         </View>
-
-        {sortedBookings.length > 0 ? (
-          <View style={styles.bookingsList}>
-            {sortedBookings.map((booking) => (
-              <View key={booking.id} style={styles.bookingCard}>
-                <View style={styles.bookingAccent} />
-                <View style={styles.bookingTop}>
-                  <View style={styles.bookingInfo}>
-                    <Text style={styles.bookingService}>
-                      {booking.service?.name ?? "שירות לא זמין"}
-                    </Text>
-
-                    <Text style={styles.bookingDate}>
-                      {formatBookingDate(booking.bookingDate)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.bookingTimeBadge}>
-                    <Text style={styles.bookingTimeText}>
-                      {booking.startTime?.slice(0, 5) ?? "--:--"}
-                    </Text>
-                    <Text style={styles.bookingTimeLabel}>שעה</Text>
-                  </View>
-                </View>
-
-                <View style={styles.bookingDivider} />
-
-                <View style={styles.bookingBottom}>
-                  <TouchableOpacity
-                    style={[
-                      styles.cancelButton,
-                      cancelBooking.isPending && styles.cancelButtonDisabled,
-                    ]}
-                    onPress={() => setBookingToCancelId(booking.id)}
-                    disabled={cancelBooking.isPending}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.cancelButtonText}>
-                      {cancelBooking.isPending ? "מבטל..." : "ביטול תור"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.noBookingCard}>
-            <Text style={styles.noBookingTitle}>אין תורים</Text>
-            <Text style={styles.noBookingSubtitle}>אין תורים קרובים כרגע</Text>
-          </View>
-        )}
-      </View>
+      )}
 
       <View style={styles.contactSection}>
         <View style={styles.contactCard}>
@@ -313,20 +404,29 @@ export default function HomeScreen() {
               disabled={!settings?.phone}
               activeOpacity={0.85}
             >
+              <View style={styles.contactIconWrap}>
+                <FontAwesome name="phone" size={17} color={colors.textGold} />
+              </View>
               <Text style={styles.contactButtonTitle}>חייגו אלינו</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
                 styles.contactButton,
-                styles.contactButtonDark,
                 !googleMapsUrl && styles.contactButtonDisabled,
               ]}
               onPress={handleNavigateToBarber}
               disabled={!googleMapsUrl}
               activeOpacity={0.85}
             >
-              <Text style={styles.contactButtonTitleDark}>נווטו אלינו</Text>
+              <View style={styles.contactIconWrap}>
+                <FontAwesome
+                  name="map-marker"
+                  size={18}
+                  color={colors.textGold}
+                />
+              </View>
+              <Text style={styles.contactButtonTitle}>נווטו אלינו</Text>
             </TouchableOpacity>
           </View>
 
@@ -471,6 +571,21 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     letterSpacing: 0.2,
   },
+  heroAuthButton: {
+    marginTop: spacing.lg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(247,206,85,0.36)",
+    backgroundColor: "rgba(255,255,255,0.10)",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  heroAuthText: {
+    color: colors.goldLight,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.extraBold,
+    textAlign: "center",
+  },
   bottomSweep: {
     position: "absolute",
     left: -12,
@@ -517,15 +632,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   noticeBoardPin: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: colors.gold,
     shadowColor: colors.shadowGold,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.24,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.26,
+    shadowRadius: 5,
+    elevation: 3,
   },
   noticeBoardTitle: {
     fontSize: typography.sizes.lg,
@@ -534,34 +649,42 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   noticeBoard: {
-    backgroundColor: "#FFF7E7",
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1.2,
-    borderColor: colors.goldBorder,
-    minHeight: 148,
+    borderColor: "rgba(212,164,42,0.26)",
+    minHeight: 156,
     padding: spacing.md,
     paddingLeft: 112,
     position: "relative",
     overflow: "hidden",
     shadowColor: colors.shadowGold,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  noticeSoftWash: {
+    position: "absolute",
+    top: -36,
+    right: -28,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: "rgba(212,164,42,0.13)",
   },
   noticeBoardCharacter: {
     position: "absolute",
     left: 0,
     bottom: 0,
-    width: 116,
-    height: 135,
+    width: 122,
+    height: 142,
     zIndex: 3,
   },
   alertCard: {
-    backgroundColor: colors.backgroundCard,
-    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.72)",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(212,164,42,0.16)",
+    borderColor: "rgba(212,164,42,0.18)",
     overflow: "hidden",
     padding: spacing.lg,
     paddingLeft: spacing.xl,
@@ -569,17 +692,21 @@ const styles = StyleSheet.create({
     minHeight: 112,
     justifyContent: "center",
     marginLeft: -24,
+    shadowColor: colors.shadowDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
   },
   alertKicker: {
     fontSize: typography.sizes.xs,
-    color: colors.textLight,
+    color: colors.textGold,
     fontWeight: typography.weights.bold,
     marginBottom: spacing.xs,
   },
   alertTitle: {
-    fontSize: typography.sizes.lg,
+    fontSize: typography.sizes.xl,
     fontWeight: typography.weights.extraBold,
-    color: colors.textGold,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
     textAlign: "right",
   },
@@ -587,7 +714,7 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     textAlign: "right",
-    lineHeight: 21,
+    lineHeight: 22,
   },
   noticeBoardFooter: {
     flexDirection: "row",
@@ -603,7 +730,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 999,
-    backgroundColor: "rgba(154,144,130,0.34)",
+    backgroundColor: "rgba(154,144,130,0.30)",
   },
   noticeDotActive: {
     width: 18,
@@ -619,9 +746,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.backgroundCard,
+    backgroundColor: "rgba(255,255,255,0.76)",
     borderWidth: 1,
-    borderColor: colors.goldBorder,
+    borderColor: "rgba(212,164,42,0.24)",
   },
   noticeControlText: {
     color: colors.textGold,
@@ -630,10 +757,10 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.bold,
   },
   noAlertsCard: {
-    backgroundColor: "rgba(255,253,248,0.72)",
-    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.72)",
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(212,164,42,0.12)",
+    borderColor: "rgba(212,164,42,0.18)",
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     minHeight: 96,
@@ -643,28 +770,138 @@ const styles = StyleSheet.create({
   noAlertsText: {
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
-    fontWeight: typography.weights.medium,
+    fontWeight: typography.weights.bold,
   },
   noticeBookingButton: {
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
     marginTop: spacing.md,
     shadowColor: colors.shadowGold,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
+    elevation: 7,
+    backgroundColor: colors.gold,
   },
-  noticeBookingGradient: {
-    minHeight: 54,
+  noticeBookingFrame: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+    zIndex: 2,
+  },
+  noticeBookingContent: {
+    minHeight: 56,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: spacing.xl,
+    position: "relative",
+    zIndex: 2,
+  },
+  noticeBookingGradient: {
+    minHeight: 56,
   },
   noticeBookingText: {
     color: colors.primary,
     fontSize: typography.sizes.lg,
     fontWeight: typography.weights.extraBold,
+  },
+  servicesIntro: {
+    color: colors.textSecondary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    lineHeight: 21,
+    marginTop: -spacing.xs,
+    marginBottom: spacing.md,
+    textAlign: "right",
+  },
+  servicesList: {
+    gap: spacing.md,
+  },
+  homeServiceCard: {
+    minHeight: 86,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(212,164,42,0.18)",
+    overflow: "hidden",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    shadowColor: colors.shadowGold,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
+    position: "relative",
+  },
+  serviceAccentLine: {
+    position: "absolute",
+    top: spacing.md,
+    right: 0,
+    bottom: spacing.md,
+    width: 3,
+    borderTopLeftRadius: 999,
+    borderBottomLeftRadius: 999,
+    backgroundColor: "rgba(212,164,42,0.45)",
+  },
+  servicePriceTag: {
+    position: "absolute",
+    top: spacing.md,
+    left: spacing.lg,
+    color: colors.textGold,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.extraBold,
+    textAlign: "left",
+  },
+  serviceContent: {
+    flex: 1,
+    alignItems: "flex-end",
+    paddingRight: spacing.md,
+    paddingLeft: 58,
+  },
+  serviceTitleRow: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    marginBottom: spacing.xs,
+  },
+  serviceName: {
+    color: colors.textPrimary,
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.extraBold,
+    textAlign: "right",
+    flex: 1,
+  },
+  serviceDescription: {
+    color: colors.textSecondary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    lineHeight: 21,
+    textAlign: "right",
+    maxWidth: "92%",
+  },
+  servicesLoadingCard: {
+    minHeight: 92,
+    borderRadius: 18,
+    backgroundColor: colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  servicesEmptyCard: {
+    minHeight: 92,
+    borderRadius: 18,
+    backgroundColor: colors.backgroundCard,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  servicesEmptyText: {
+    color: colors.textSecondary,
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.medium,
+    textAlign: "center",
   },
   bookingsList: {
     gap: spacing.md,
@@ -824,31 +1061,40 @@ const styles = StyleSheet.create({
   },
   contactButton: {
     flex: 1,
-    minHeight: 58,
-    borderRadius: 16,
+    minHeight: 66,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: colors.goldBorder,
-    backgroundColor: colors.goldMuted,
+    borderColor: "rgba(212,164,42,0.24)",
+    backgroundColor: "#FFFCF5",
     alignItems: "center",
     justifyContent: "center",
-    padding: spacing.md,
-  },
-  contactButtonDark: {
-    backgroundColor: colors.primary,
-    borderColor: colors.gold,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+    shadowColor: colors.shadowGold,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.09,
+    shadowRadius: 12,
+    elevation: 2,
   },
   contactButtonDisabled: {
     opacity: 0.45,
   },
+  contactIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(212,164,42,0.22)",
+    backgroundColor: "rgba(212,164,42,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   contactButtonTitle: {
     color: colors.textGold,
-    fontSize: typography.sizes.lg,
+    fontSize: typography.sizes.md,
     fontWeight: typography.weights.extraBold,
-  },
-  contactButtonTitleDark: {
-    color: colors.gold,
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.extraBold,
+    textAlign: "center",
   },
   instagramButton: {
     minHeight: 58,

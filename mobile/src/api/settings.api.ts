@@ -34,7 +34,10 @@ const mapSettings = (raw: RawSettings): BusinessSettings => ({
 
 export const settingsApi = {
   get: async (): Promise<BusinessSettings> => {
-    const { data } = await apiClient.get<RawSettings>("/settings");
+    const { data } = await apiClient.get<RawSettings>("/settings", {
+      skipAuth: true,
+      skipUnauthorizedHandler: true,
+    });
     return mapSettings(data);
   },
 

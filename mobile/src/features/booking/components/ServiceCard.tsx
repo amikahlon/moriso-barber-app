@@ -24,8 +24,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
       onPress={() => onPress(service)}
       activeOpacity={0.9}
     >
-      <View style={styles.glowOrb} />
-      <View style={styles.glowOrbSecondary} />
       <View style={[styles.accentLine, isSelected && styles.accentLineSelected]} />
 
       <View style={styles.content}>
@@ -45,15 +43,11 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
         </View>
 
         <View style={styles.bottomRow}>
-          <View style={styles.metaRow}>
-            <Text style={[styles.metaText, isSelected && styles.metaTextSelected]}>
-              {service.durationMinutes} דקות
+          <View style={[styles.pricePill, isSelected && styles.pricePillSelected]}>
+            <Text style={[styles.price, isSelected && styles.priceSelected]}>
+              ₪{service.price}
             </Text>
           </View>
-
-          <Text style={[styles.price, isSelected && styles.priceSelected]}>
-            ₪{service.price}
-          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -63,46 +57,28 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     width: "100%",
-    backgroundColor: "#FFFDF9",
-    borderRadius: 28,
+    backgroundColor: "#FFFEFA",
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: "rgba(212,164,42,0.10)",
+    borderColor: "rgba(212,164,42,0.16)",
     overflow: "hidden",
     shadowColor: colors.shadowDark,
-    shadowOffset: { width: 0, height: 14 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 1,
-    shadowRadius: 24,
+    shadowRadius: 16,
     elevation: 3,
   },
   cardSelected: {
-    backgroundColor: "#FFF9EF",
-    borderColor: "rgba(212,164,42,0.38)",
+    backgroundColor: "#FFF7EA",
+    borderColor: "rgba(212,164,42,0.48)",
     shadowColor: colors.shadowGold,
-    shadowOpacity: 0.18,
-    shadowRadius: 26,
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
     elevation: 6,
   },
-  glowOrb: {
-    position: "absolute",
-    top: -30,
-    right: -22,
-    width: 120,
-    height: 120,
-    borderRadius: 999,
-    backgroundColor: "rgba(247,206,85,0.16)",
-  },
-  glowOrbSecondary: {
-    position: "absolute",
-    bottom: -26,
-    left: -20,
-    width: 88,
-    height: 88,
-    borderRadius: 999,
-    backgroundColor: "rgba(212,164,42,0.08)",
-  },
   accentLine: {
-    height: 2,
-    backgroundColor: "rgba(255,255,255,0.45)",
+    height: 3,
+    backgroundColor: "rgba(212,164,42,0.12)",
   },
   accentLineSelected: {
     height: 4,
@@ -110,8 +86,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
-    gap: spacing.lg,
+    paddingVertical: spacing.lg,
+    gap: spacing.md,
   },
   topRow: {
     flexDirection: "row",
@@ -145,11 +121,11 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   name: {
-    fontSize: typography.sizes.xxl,
+    fontSize: typography.sizes.xl,
     fontWeight: typography.weights.extraBold,
     color: colors.textPrimary,
     textAlign: "right",
-    lineHeight: 30,
+    lineHeight: 27,
   },
   nameSelected: {
     color: colors.textGold,
@@ -163,31 +139,32 @@ const styles = StyleSheet.create({
   },
   bottomRow: {
     flexDirection: "row-reverse",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     alignItems: "center",
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
     borderTopColor: "rgba(212,164,42,0.10)",
   },
+  pricePill: {
+    minWidth: 82,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(212,164,42,0.24)",
+    backgroundColor: "rgba(212,164,42,0.08)",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    alignItems: "center",
+  },
+  pricePillSelected: {
+    borderColor: "rgba(212,164,42,0.44)",
+    backgroundColor: "rgba(212,164,42,0.16)",
+  },
   price: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    color: colors.textSecondary,
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.extraBold,
+    color: colors.textGold,
   },
   priceSelected: {
-    color: colors.textSecondary,
-  },
-  metaRow: {
-    flexDirection: "row-reverse",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  metaText: {
-    fontSize: typography.sizes.xs,
-    color: colors.textLight,
-    fontWeight: typography.weights.medium,
-  },
-  metaTextSelected: {
-    color: colors.textSecondary,
+    color: colors.textGold,
   },
 });

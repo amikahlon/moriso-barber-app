@@ -21,7 +21,10 @@ const mapAlert = (raw: RawAlert): Alert => ({
 
 export const alertsApi = {
   getActive: async (): Promise<Alert[]> => {
-    const { data } = await apiClient.get<RawAlert[]>("/alerts/active");
+    const { data } = await apiClient.get<RawAlert[]>("/alerts/active", {
+      skipAuth: true,
+      skipUnauthorizedHandler: true,
+    });
     return data.map(mapAlert);
   },
 

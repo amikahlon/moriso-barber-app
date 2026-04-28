@@ -27,6 +27,12 @@ export const servicesApi = {
   getAll: async (onlyActive = false): Promise<Service[]> => {
     const { data } = await apiClient.get<RawService[]>(
       `/services${onlyActive ? "?onlyActive=true" : ""}`,
+      onlyActive
+        ? {
+            skipAuth: true,
+            skipUnauthorizedHandler: true,
+          }
+        : undefined,
     );
     return data.map(mapService);
   },

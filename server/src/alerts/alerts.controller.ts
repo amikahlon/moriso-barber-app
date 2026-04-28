@@ -15,13 +15,11 @@ import { UpdateAlertDto } from './dto/update-alert.dto';
 import { JwtAuthGuard, RolesGuard, Roles, ParseUuidPipe } from '../common';
 
 @ApiTags('alerts')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('alerts')
 export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
-  /** כל ה-alerts הפעילים — לכל משתמש מחובר */
+  /** כל ה-alerts הפעילים — פתוח */
   @Get('active')
   @ApiOperation({ summary: 'alerts פעילים' })
   findActive() {
@@ -30,8 +28,9 @@ export class AlertsController {
 
   /** כל ה-alerts — אדמין בלבד */
   @Get()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'כל ה-alerts — אדמין בלבד' })
   findAll() {
     return this.alertsService.findAll();
@@ -39,8 +38,9 @@ export class AlertsController {
 
   /** יצירת alert — אדמין בלבד */
   @Post()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'יצירת alert — אדמין בלבד' })
   create(@Body() dto: CreateAlertDto) {
     return this.alertsService.create(dto);
@@ -48,8 +48,9 @@ export class AlertsController {
 
   /** עדכון alert — אדמין בלבד */
   @Patch(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'עדכון alert — אדמין בלבד' })
   update(@Param('id', ParseUuidPipe) id: string, @Body() dto: UpdateAlertDto) {
     return this.alertsService.update(id, dto);
@@ -57,8 +58,9 @@ export class AlertsController {
 
   /** מחיקת alert — אדמין בלבד */
   @Delete(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'מחיקת alert — אדמין בלבד' })
   remove(@Param('id', ParseUuidPipe) id: string) {
     return this.alertsService.remove(id);

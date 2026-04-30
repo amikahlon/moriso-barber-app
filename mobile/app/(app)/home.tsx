@@ -14,7 +14,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { FontAwesome } from "@expo/vector-icons";
 import { router } from "expo-router";
 
-import { ScreenLoader } from "../../src/components/common";
 import { colors, typography, spacing } from "../../src/constants";
 import { useCurrentUserQuery } from "../../src/features/auth/hooks";
 import { CancelBookingDialog } from "../../src/features/booking/components";
@@ -34,7 +33,7 @@ import { useAuth } from "../../src/hooks";
 export default function HomeScreen() {
   const { isAuthenticated } = useAuth();
   const currentUserQuery = useCurrentUserQuery();
-  const { alerts, isLoading } = useHome();
+  const { alerts, isLoading: alertsLoading } = useHome();
   const { bookings } = useMyBooking();
   const cancelBooking = useCancelBooking();
   const servicesQuery = useBookingServices();
@@ -106,10 +105,6 @@ export default function HomeScreen() {
 
     return () => clearInterval(intervalId);
   }, [alerts.length]);
-
-  if ((isAuthenticated && currentUserQuery.isLoading) || isLoading) {
-    return <ScreenLoader />;
-  }
 
   const user = isAuthenticated ? currentUserQuery.data : null;
 
@@ -198,7 +193,11 @@ export default function HomeScreen() {
             resizeMode="contain"
           />
 
-          {activeAlert ? (
+          {alertsLoading ? (
+            <View style={styles.noAlertsCard}>
+              <ActivityIndicator color={colors.gold} />
+            </View>
+          ) : activeAlert ? (
             <>
               <View style={styles.alertCard}>
                 <Text style={styles.alertKicker}>עדכון מהספר</Text>

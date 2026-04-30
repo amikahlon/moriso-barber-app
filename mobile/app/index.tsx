@@ -17,9 +17,5 @@ export default function Index() {
     return <Redirect href="/(app)/home" />;
   }
 
-  if (currentUserQuery.isLoading) {
-    return <ScreenLoader />;
-  }
-
   return <Redirect href={getHomeRouteForRole(currentUserQuery.data?.role)} />;
 }

@@ -9,14 +9,19 @@
 import { useQueryClient } from "@tanstack/react-query";
 import type { Session } from "@supabase/supabase-js";
 
-import { supabase } from "../../../lib/supabase";
+import { clearStoredSupabaseSession, supabase } from "../../../lib/supabase";
 import {
   unregisterExpoPushToken,
   useExpoPushToken,
 } from "../../notifications/hooks";
 import { clearAuthQueries } from "../constants/queryKeys";
 import { setUnauthorizedHandler } from "../lib/unauthorized-handler";
+import {
+  getAuthErrorMessageForLog,
+  isInvalidRefreshTokenError,
+} from "../utils/sessionErrors";
 
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 6000;
 
 interface AuthContextValue {
   session: Session | null;
@@ -30,6 +35,18 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 interface AuthProviderProps {
   children: React.ReactNode;
 }
+
+const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number) =>
+  new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error("Auth bootstrap timed out"));
+    }, timeoutMs);
+
+    promise
+      .then(resolve)
+      .catch(reject)
+      .finally(() => clearTimeout(timeoutId));
+  });
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const queryClient = useQueryClient();
@@ -56,6 +73,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.signOut();
 
       if (error) {
+        if (isInvalidRefreshTokenError(error)) {
+          await clearStoredSupabaseSession();
+          setSession(null);
+          return;
+        }
+
         throw error;
       }
     } finally {
@@ -67,16 +90,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     let isMounted = true;
 
     const bootstrap = async () => {
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          error,
+          data: { session: currentSession },
+        } = await withTimeout(
+          supabase.auth.getSession(),
+          AUTH_BOOTSTRAP_TIMEOUT_MS,
+        );
 
-      if (!isMounted) {
-        return;
+        if (error) {
+          throw error;
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSession(currentSession);
+      } catch (error) {
+        if (isInvalidRefreshTokenError(error)) {
+          await clearStoredSupabaseSession();
+          clearUserState();
+
+          if (isMounted) {
+            setSession(null);
+          }
+
+          return;
+        }
+
+        console.warn(
+          "Auth bootstrap failed:",
+          getAuthErrorMessageForLog(error),
+        );
+      } finally {
+        if (isMounted) {
+          setIsAuthReady(true);
+        }
       }
-
-      setSession(currentSession);
-      setIsAuthReady(true);
     };
 
     void bootstrap();

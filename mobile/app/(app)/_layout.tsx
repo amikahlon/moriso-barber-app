@@ -24,7 +24,6 @@ export default function AppLayout() {
   if (!isAuthenticated && !isHomeRoute) {
     return <Redirect href="/(auth)/login" />;
   }
-  if (currentUserQuery.isLoading) return <ScreenLoader />;
   if (currentUserQuery.data?.role === "admin") {
     return <Redirect href="/(admin)/home" />;
   }

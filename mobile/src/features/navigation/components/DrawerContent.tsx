@@ -1,16 +1,10 @@
-import {
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, usePathname } from "expo-router";
 
 import { colors, spacing, typography } from "../../../constants";
 import { useAuth } from "../../../hooks";
+import { hasBusinessLocation, openBusinessLocation } from "../../../utils/maps";
 import { useCurrentUserQuery } from "../../auth/hooks";
 import { useSettingsQuery } from "../../settings/hooks/useSettingsQuery";
 import {
@@ -48,10 +42,10 @@ export function DrawerContent({
 
   const handleNavigate = (route: string) => {
     if (route === "navigate") {
-      if (settings?.googleMapsUrl) {
-        void Linking.openURL(settings.googleMapsUrl);
-      }
       closeDrawer();
+      if (settings && hasBusinessLocation(settings)) {
+        openBusinessLocation(settings);
+      }
       return;
     }
 

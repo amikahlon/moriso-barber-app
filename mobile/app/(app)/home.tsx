@@ -29,6 +29,7 @@ import {
 import { DrawerToggle } from "../../src/features/navigation";
 import { useSettingsQuery } from "../../src/features/settings/hooks";
 import { useAuth } from "../../src/hooks";
+import { hasBusinessLocation, openBusinessLocation } from "../../src/utils/maps";
 
 export default function HomeScreen() {
   const { isAuthenticated } = useAuth();
@@ -45,12 +46,12 @@ export default function HomeScreen() {
   const sortedBookings = isAuthenticated ? sortBookingsByStart(bookings) : [];
   const activeAlert =
     alerts.length > 0 ? alerts[activeAlertIndex % alerts.length] : null;
-  const googleMapsUrl = settings?.googleMapsUrl;
   const instagramUrl = settings?.instagramUrl;
+  const canNavigateToBarber = hasBusinessLocation(settings);
 
   const handleNavigateToBarber = () => {
-    if (googleMapsUrl) {
-      void Linking.openURL(googleMapsUrl);
+    if (settings) {
+      openBusinessLocation(settings);
     }
   };
 
@@ -412,10 +413,10 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={[
                 styles.contactButton,
-                !googleMapsUrl && styles.contactButtonDisabled,
+                !canNavigateToBarber && styles.contactButtonDisabled,
               ]}
               onPress={handleNavigateToBarber}
-              disabled={!googleMapsUrl}
+              disabled={!canNavigateToBarber}
               activeOpacity={0.85}
             >
               <View style={styles.contactIconWrap}>

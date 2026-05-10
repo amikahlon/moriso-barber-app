@@ -53,9 +53,68 @@ interface RawDefaultHour {
   created_at: string;
 }
 
-const extractTime = (raw: string): string => {
+type RawSlot =
+  | string
+  | Partial<TimeSlot>
+  | {
+      start_time?: unknown;
+      end_time?: unknown;
+      is_available?: unknown;
+    };
+
+type RawSlotsResponse =
+  | RawSlot[]
+  | {
+      slots?: RawSlot[];
+      data?: RawSlot[];
+      items?: RawSlot[];
+      results?: RawSlot[];
+    }
+  | null;
+
+const extractTime = (raw: unknown): string => {
+  if (typeof raw !== "string") return "";
   if (raw.includes("T")) return raw.split("T")[1].slice(0, 5);
   return raw.slice(0, 5);
+};
+
+const normalizeSlotsResponse = (data: RawSlotsResponse): TimeSlot[] => {
+  const rawSlots = Array.isArray(data)
+    ? data
+    : data?.slots ?? data?.data ?? data?.items ?? data?.results ?? [];
+
+  return rawSlots
+    .map((slot) => {
+      if (typeof slot === "string") {
+        return {
+          startTime: extractTime(slot),
+          endTime: "",
+          isAvailable: true,
+        };
+      }
+
+      const rawSlot = slot as Partial<TimeSlot> & {
+        start_time?: unknown;
+        end_time?: unknown;
+        is_available?: unknown;
+      };
+      const startTime = extractTime(rawSlot.startTime ?? rawSlot.start_time);
+      const endTime = extractTime(rawSlot.endTime ?? rawSlot.end_time);
+
+      if (!startTime) {
+        return null;
+      }
+
+      return {
+        startTime,
+        endTime,
+        isAvailable:
+          typeof rawSlot.isAvailable === "boolean"
+            ? rawSlot.isAvailable
+            : rawSlot.is_available !== false,
+      };
+    })
+    .filter((slot): slot is TimeSlot => !!slot);
 };
 
 const mapTimeRange = (raw: RawTimeRange): CustomDayHour => ({
@@ -160,9 +219,11 @@ export const scheduleApi = {
     serviceDuration: number,
   ): Promise<TimeSlot[]> => {
     const dateOnly = date.split("T")[0];
-    const { data } = await apiClient.get<TimeSlot[]>(
-      `/schedule/slots?date=${dateOnly}&serviceDuration=${serviceDuration}`,
+    const { data } = await apiClient.get<RawSlotsResponse>(
+      `/schedule/slots?date=${encodeURIComponent(
+        dateOnly,
+      )}&serviceDuration=${encodeURIComponent(serviceDuration)}`,
     );
-    return data;
+    return normalizeSlotsResponse(data);
   },
 };

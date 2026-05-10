@@ -3,6 +3,7 @@ import { bookingsApi } from "../../../api";
 import { homeQueryKeys } from "../../home/constants/queryKeys";
 import { useBookingStore } from "../../../store/booking.store";
 import type { CreateBookingDto } from "../../../types";
+import { bookingQueryKeys } from "../constants/queryKeys";
 
 export const useCreateBooking = () => {
   const queryClient = useQueryClient();
@@ -13,6 +14,12 @@ export const useCreateBooking = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: homeQueryKeys.myBooking,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: bookingQueryKeys.openDays,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["slots"],
       });
       resetBookingFlow();
     },

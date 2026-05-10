@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Alert,
   View,
   Text,
   ScrollView,
@@ -27,6 +28,60 @@ import {
 } from "../../src/features/booking/hooks";
 import { useBookingStore } from "../../src/store/booking.store";
 import { colors, typography, spacing } from "../../src/constants";
+import { normalizeDateKey, parseDateKey } from "../../src/utils/calendar";
+
+const text = {
+  missingSelectionTitle: "חסרים פרטים",
+  missingSelectionMessage: "בחר שירות, תאריך ושעה לפני קביעת תור.",
+  pastDateTitle: "התאריך כבר עבר",
+  pastDateMessage: "בחר תאריך פנוי חדש.",
+  pastTimeTitle: "השעה כבר לא זמינה",
+  pastTimeMessage: "בחר שעה אחרת להזמנה.",
+  bookingErrorTitle: "שגיאה בקביעת התור",
+  genericBookingError: "לא הצלחנו לקבוע את התור. נסה שוב.",
+  conflictBookingError: "השעה הזו כבר נתפסה. בחר שעה אחרת.",
+  invalidResponseError:
+    "התור נשמר, אבל לא הצלחנו לקבל אישור תקין. בדוק את מסך התורים שלך.",
+} as const;
+
+const getBookingErrorMessage = (error: unknown) => {
+  const maybeError = error as {
+    message?: unknown;
+    response?: { status?: number; data?: { message?: unknown } };
+  };
+
+  if (maybeError.message === "BOOKING_RESPONSE_INVALID") {
+    return text.invalidResponseError;
+  }
+
+  if (maybeError.response?.status === 409) {
+    return text.conflictBookingError;
+  }
+
+  const serverMessage = maybeError.response?.data?.message;
+
+  if (typeof serverMessage === "string" && serverMessage.trim()) {
+    return serverMessage;
+  }
+
+  if (Array.isArray(serverMessage)) {
+    return serverMessage.filter(Boolean).join("\n");
+  }
+
+  return text.genericBookingError;
+};
+
+const isPastDate = (date: string) =>
+  normalizeDateKey(parseDateKey(date)) < normalizeDateKey(new Date());
+
+const isPastSlot = (date: string, time: string) => {
+  const slotDate = parseDateKey(date);
+  const [hours = 0, minutes = 0] = time.slice(0, 5).split(":").map(Number);
+
+  slotDate.setHours(hours || 0, minutes || 0, 0, 0);
+
+  return slotDate.getTime() < Date.now();
+};
 
 export default function BookingScreen() {
   const {
@@ -148,7 +203,29 @@ export default function BookingScreen() {
   }, [selectedTimeSlot, scrollToSection]);
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (createBooking.isPending) {
+      return;
+    }
+
+    if (!selectedService || !selectedDate || !selectedTimeSlot) {
+      Alert.alert(text.missingSelectionTitle, text.missingSelectionMessage);
+      return;
+    }
+
+    if (isPastDate(selectedDate)) {
+      setSelectedDate("");
+      setSelectedTimeSlot("");
+      void openDaysQuery.refetch();
+      Alert.alert(text.pastDateTitle, text.pastDateMessage);
+      return;
+    }
+
+    if (isPastSlot(selectedDate, selectedTimeSlot)) {
+      setSelectedTimeSlot("");
+      void slotsQuery.refetch();
+      Alert.alert(text.pastTimeTitle, text.pastTimeMessage);
+      return;
+    }
 
     try {
       await createBooking.mutateAsync({
@@ -163,9 +240,16 @@ export default function BookingScreen() {
         successTimeoutRef.current = null;
         router.replace("/(app)/home");
       }, 1600);
-    } catch (error: any) {
-      const message = error?.response?.data?.message ?? "שגיאה בקביעת התור";
-      alert(message);
+    } catch (error: unknown) {
+      const status = (error as { response?: { status?: number } }).response
+        ?.status;
+
+      if (status === 409) {
+        setSelectedTimeSlot("");
+        void slotsQuery.refetch();
+      }
+
+      Alert.alert(text.bookingErrorTitle, getBookingErrorMessage(error));
     }
   };
 

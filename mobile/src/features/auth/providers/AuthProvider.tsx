@@ -22,6 +22,7 @@ import {
 } from "../utils/sessionErrors";
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 6000;
+const SESSION_REFRESH_GRACE_SECONDS = 60;
 
 interface AuthContextValue {
   session: Session | null;
@@ -47,6 +48,15 @@ const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number) =>
       .catch(reject)
       .finally(() => clearTimeout(timeoutId));
   });
+
+const shouldRefreshSession = (session: Session | null) => {
+  if (!session?.expires_at) {
+    return false;
+  }
+
+  const expiresInSeconds = session.expires_at - Date.now() / 1000;
+  return expiresInSeconds <= SESSION_REFRESH_GRACE_SECONDS;
+};
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const queryClient = useQueryClient();
@@ -105,6 +115,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (!isMounted) {
           return;
+        }
+
+        if (shouldRefreshSession(currentSession)) {
+          const {
+            data: { session: refreshedSession },
+            error: refreshError,
+          } = await withTimeout(
+            supabase.auth.refreshSession(),
+            AUTH_BOOTSTRAP_TIMEOUT_MS,
+          );
+
+          if (refreshError) {
+            if (isInvalidRefreshTokenError(refreshError)) {
+              await clearStoredSupabaseSession();
+              clearUserState();
+
+              if (isMounted) {
+                setSession(null);
+              }
+
+              return;
+            }
+
+            console.warn(
+              "Auth session refresh failed:",
+              getAuthErrorMessageForLog(refreshError),
+            );
+          } else if (refreshedSession) {
+            setSession(refreshedSession);
+            return;
+          }
         }
 
         setSession(currentSession);

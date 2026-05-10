@@ -2,29 +2,29 @@ import { apiClient } from "./client";
 import type { Booking, CreateBookingDto } from "../types";
 
 interface RawBookingService {
-  id: string;
-  name: string;
+  id?: string;
+  name?: string;
   price?: number | string;
-  duration_minutes: number;
+  duration_minutes?: number;
 }
 
 interface RawBookingUser {
-  id: string;
-  full_name: string;
-  phone: string;
-  email: string;
+  id?: string;
+  full_name?: string;
+  phone?: string;
+  email?: string;
 }
 
 interface RawBooking {
-  id: string;
-  customer_id: string;
-  service_id: string;
-  booking_date: string;
-  start_time: string;
-  end_time: string;
-  status: Booking["status"];
+  id?: string;
+  customer_id?: string;
+  service_id?: string;
+  booking_date?: string;
+  start_time?: string;
+  end_time?: string;
+  status?: Booking["status"];
   notes?: string | null;
-  service_price_snapshot: number | string;
+  service_price_snapshot?: number | string;
   service?: RawBookingService;
   services?: RawBookingService;
   users?: RawBookingUser;
@@ -42,7 +42,17 @@ type RawBookingsResponse =
     }
   | null;
 
-const extractTime = (raw: string): string => {
+const isBookingStatus = (value: unknown): value is Booking["status"] =>
+  value === "active" ||
+  value === "completed" ||
+  value === "cancelled_by_customer" ||
+  value === "cancelled_by_admin";
+
+const readString = (value: unknown, fallback = "") =>
+  typeof value === "string" ? value : fallback;
+
+const extractTime = (raw: unknown): string => {
+  if (typeof raw !== "string") return "";
   if (raw.includes("T")) return raw.split("T")[1].slice(0, 5);
   return raw.slice(0, 5);
 };
@@ -72,33 +82,36 @@ const normalizeBookingsResponse = (data: RawBookingsResponse): RawBooking[] => {
 const mapBooking = (raw: RawBooking): Booking => {
   const service = raw.services ?? raw.service;
   const user = raw.users ?? raw.user;
+  const priceSnapshot = Number(
+    raw.service_price_snapshot ?? service?.price ?? 0,
+  );
 
   return {
-    id: raw.id,
-    customerId: raw.customer_id,
-    serviceId: raw.service_id,
-    bookingDate: raw.booking_date,
+    id: readString(raw.id),
+    customerId: readString(raw.customer_id),
+    serviceId: readString(raw.service_id),
+    bookingDate: readString(raw.booking_date),
     startTime: extractTime(raw.start_time),
     endTime: extractTime(raw.end_time),
-    status: raw.status,
+    status: isBookingStatus(raw.status) ? raw.status : "active",
     notes: raw.notes ?? undefined,
-    servicePriceSnapshot: Number(raw.service_price_snapshot),
+    servicePriceSnapshot: Number.isFinite(priceSnapshot) ? priceSnapshot : 0,
     service: service
       ? {
-          id: service.id,
-          name: service.name,
-          price: Number(service.price ?? raw.service_price_snapshot),
-          durationMinutes: service.duration_minutes,
+          id: readString(service.id),
+          name: readString(service.name, "Service"),
+          price: Number(service.price ?? priceSnapshot),
+          durationMinutes: Number(service.duration_minutes ?? 0),
           sortOrder: 0,
           isActive: true,
         }
       : undefined,
     user: user
       ? {
-          id: user.id,
-          fullName: user.full_name,
-          phone: user.phone,
-          email: user.email,
+          id: readString(user.id),
+          fullName: readString(user.full_name),
+          phone: readString(user.phone),
+          email: readString(user.email),
         }
       : undefined,
   };
@@ -111,15 +124,24 @@ export const bookingsApi = {
   },
 
   getAllByDate: async (date: string): Promise<Booking[]> => {
-    const { data } = await apiClient.get<RawBooking[]>(
-      `/bookings/by-date?date=${date}`,
+    const { data } = await apiClient.get<RawBookingsResponse>(
+      `/bookings/by-date?date=${encodeURIComponent(date)}`,
     );
-    return data.map(mapBooking);
+    return normalizeBookingsResponse(data).map(mapBooking);
   },
 
   create: async (dto: CreateBookingDto): Promise<Booking> => {
-    const { data } = await apiClient.post<RawBooking>("/bookings", dto);
-    return mapBooking(data);
+    const { data } = await apiClient.post<RawBookingsResponse>(
+      "/bookings",
+      dto,
+    );
+    const [booking] = normalizeBookingsResponse(data);
+
+    if (!booking) {
+      throw new Error("BOOKING_RESPONSE_INVALID");
+    }
+
+    return mapBooking(booking);
   },
 
   cancel: async (bookingId: string): Promise<Booking> => {

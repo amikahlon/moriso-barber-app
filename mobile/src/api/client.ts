@@ -79,17 +79,25 @@ apiClient.interceptors.response.use(
           return apiClient.request(error.config);
         }
 
-        if (refreshError && isInvalidRefreshTokenError(refreshError)) {
-          await clearStoredSupabaseSession();
+        if (refreshError) {
+          if (isInvalidRefreshTokenError(refreshError)) {
+            await clearStoredSupabaseSession();
+            await triggerUnauthorizedHandler();
+          }
+
+          return Promise.reject(error);
         }
+
+        await clearStoredSupabaseSession();
+        await triggerUnauthorizedHandler();
       } catch (refreshError) {
         if (isInvalidRefreshTokenError(refreshError)) {
           await clearStoredSupabaseSession();
+          await triggerUnauthorizedHandler();
         }
-      }
 
-      await clearStoredSupabaseSession();
-      await triggerUnauthorizedHandler();
+        return Promise.reject(error);
+      }
     }
 
     return Promise.reject(error);
